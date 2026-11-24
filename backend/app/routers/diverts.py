@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from app.db import db, rows_to_list, row_to_dict
+from app.db import db, write_db, rows_to_list, row_to_dict
 from app.services.common import audit, current_shift, now_str, require_unsealed
 
 router = APIRouter(tags=["错分回流"])
@@ -22,7 +22,7 @@ def list_batches():
 
 @router.post("/回流批次")
 def create_divert(body: DivertIn):
-    with db() as conn:
+    with write_db() as conn:
         require_unsealed(conn)
         shift = current_shift(conn)
         scan = conn.execute("SELECT * FROM scans WHERE id=?", (body.扫描编号,)).fetchone()

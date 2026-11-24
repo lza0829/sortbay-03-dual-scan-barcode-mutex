@@ -135,3 +135,26 @@ th { background: #e4e8ee; }
 .msg { margin: 0.5rem 0; color: var(--ok); }
 .err { margin: 0.5rem 0; color: var(--danger); }
 .muted { color: #66707c; font-size: 0.86rem; }
+
+/* ADR-0001 互斥单行臂 */
+.tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #8a5a00;
+  background: #fff1d6;
+  border: 1px solid #e0b65c;
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+}
+.reject-card {
+  border: 1px solid var(--danger);
+  background: #fdecec;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+}
+.row-reject td { background: #fdecec; }
+.ok { color: var(--ok); font-weight: 600; }
+.err-text { color: var(--danger); font-weight: 600; }
+.replay { margin-top: 0.5rem; }

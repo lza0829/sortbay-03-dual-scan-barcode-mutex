@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from app.db import db, rows_to_list, row_to_dict
+from app.db import db, write_db, rows_to_list, row_to_dict
 from app.services.common import audit, now_str
 
 router = APIRouter(tags=["班次"])
@@ -44,7 +44,27 @@ def reconcile(shift_id: int | None = None):
             "SELECT COUNT(*) c FROM scans WHERE shift_id=? AND status IN ('待路由','错分回流')",
             (sid,),
         ).fetchone()["c"]
+        # ADR-0001 互斥单行臂：同班次同码多行恒为 0，否则视为未闭合。
+        dup_groups = conn.execute(
+            """
+            SELECT COUNT(*) c FROM (
+              SELECT barcode FROM scans WHERE shift_id=?
+              GROUP BY barcode HAVING COUNT(*) > 1
+            )
+            """,
+            (sid,),
+        ).fetchone()["c"]
+        reject_n = conn.execute(
+            """
+            SELECT COUNT(*) c FROM audit_events
+            WHERE action='再扫拒收' AND ref_id IN (
+              SELECT id FROM scans WHERE shift_id=?
+            )
+            """,
+            (sid,),
+        ).fetchone()["c"]
         return {
+            "口径": "互斥单行臂 ADR-0001",
             "班次": row_to_dict(shift),
             "扫描总数": scan_n,
             "已路由及以上": routed,
@@ -52,12 +72,15 @@ def reconcile(shift_id: int | None = None):
             "已封袋数": sealed_bag,
             "回流批次数": divert_n,
             "未清件数": pending,
+            "同码多行数": dup_groups,
+            "互斥臂闭合": dup_groups == 0,
+            "再扫拒收次数": reject_n,
         }
 
 
 @router.post("/班次")
 def create_shift(body: ShiftIn):
-    with db() as conn:
+    with write_db() as conn:
         open_one = conn.execute("SELECT id FROM shifts WHERE sealed=0").fetchone()
         if open_one:
             raise HTTPException(400, "仍有未封班班次，先封班再开新班")
@@ -78,7 +101,7 @@ def create_shift(body: ShiftIn):
 
 @router.post("/班次/{shift_id}/封班")
 def seal_shift(shift_id: int):
-    with db() as conn:
+    with write_db() as conn:
         shift = conn.execute("SELECT * FROM shifts WHERE id=?", (shift_id,)).fetchone()
         if not shift:
             raise HTTPException(404, "班次不存在")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel
-from app.db import db, rows_to_list
+from app.db import db, write_db, rows_to_list
 from app.services.common import audit
 
 router = APIRouter(tags=["设置"])
@@ -20,7 +20,7 @@ def list_settings():
 
 @router.post("/设置")
 def set_setting(body: SettingIn):
-    with db() as conn:
+    with write_db() as conn:
         conn.execute(
             "INSERT INTO settings(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
             (body.键, body.值),

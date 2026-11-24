@@ -19,12 +19,19 @@ export default function Shifts() {
       <h2>班次对账</h2>
       {err && <div className="err">{err}</div>}
       {rec && (
+        <>
         <div className="grid">
           <div className="stat"><div className="n">{rec.扫描总数}</div><div className="l">扫描总数</div></div>
           <div className="stat"><div className="n">{rec.已路由及以上}</div><div className="l">已路由及以上</div></div>
           <div className="stat"><div className="n">{rec.已封袋数}</div><div className="l">已封袋数</div></div>
           <div className="stat"><div className="n">{rec.未清件数}</div><div className="l">未清件数</div></div>
+          <div className="stat"><div className="n">{rec.再扫拒收次数 ?? 0}</div><div className="l">再扫拒收</div></div>
         </div>
+        <p className={rec.互斥臂闭合 ? 'ok' : 'err-text'}>
+          {rec.口径 || ''} · 同码多行数 {rec.同码多行数 ?? 0} ·
+          互斥臂{rec.互斥臂闭合 ? '闭合' : '未闭合（双破唯一）'}
+        </p>
+        </>
       )}
       <table>
         <thead><tr><th>编号</th><th>营业日</th><th>班次</th><th>封班</th><th>操作</th></tr></thead>
